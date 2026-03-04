@@ -44,34 +44,6 @@ def run_tests():
     save_run(report)
     return redirect(url_for('dashboard'))
 
-@app.route('/export')
-def export_json():
-    runs = list_runs(limit=100)
-    return jsonify({
-        "api": "Frankfurter",
-        "exported_at": datetime.now(PARIS_TZ).isoformat(),
-        "total_runs": len(runs),
-        "runs": runs
-    })
-
-@app.route('/health')
-def health():
-    latest = get_latest_run()
-    stats = get_stats()
-    status = "healthy"
-    if latest:
-        if latest['availability_pct'] < 50:
-            status = "unhealthy"
-        elif latest['availability_pct'] < 70:
-            status = "degraded"
-    return jsonify({
-        "status": status,
-        "api": "Frankfurter",
-        "last_check": latest['timestamp'] if latest else None,
-        "availability": latest['availability_pct'] if latest else None,
-        "latency_avg_ms": latest['latency_avg'] if latest else None,
-        "total_runs": stats.get('total_runs', 0)
-    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
