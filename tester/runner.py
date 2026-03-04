@@ -1,7 +1,9 @@
 import statistics
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from .client import APIClient
 from .tests import create_tests, run_test
+
+PARIS_TZ = timezone(timedelta(hours=1))
 
 def run_all_tests(base_url="https://api.frankfurter.app"):
     client = APIClient(base_url, timeout=3.0, max_retries=1)
@@ -37,7 +39,7 @@ def run_all_tests(base_url="https://api.frankfurter.app"):
     return {
         "api": "Frankfurter",
         "base_url": base_url,
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(PARIS_TZ).isoformat(),
         "summary": {
             "total": total,
             "passed": passed,

@@ -1,6 +1,6 @@
 from flask import Flask, render_template, jsonify, redirect, url_for
 import json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from tester.runner import run_all_tests
 from storage import save_run, get_latest_run, list_runs, get_stats
@@ -9,10 +9,15 @@ app = Flask(__name__)
 
 LAST_RUN_TIME = None
 MIN_INTERVAL_SECONDS = 30
+PARIS_TZ = timezone(timedelta(hours=1))
 
 @app.route('/')
 def index():
     return redirect(url_for('dashboard'))
+
+@app.route('/consignes')
+def consignes():
+    return render_template('consignes.html')
 
 @app.route('/dashboard')
 def dashboard():
@@ -26,7 +31,7 @@ def dashboard():
 @app.route('/run')
 def run_tests():
     global LAST_RUN_TIME
-    now = datetime.now()
+    now = datetime.now(PARIS_TZ)
     if LAST_RUN_TIME:
         elapsed = (now - LAST_RUN_TIME).total_seconds()
         if elapsed < MIN_INTERVAL_SECONDS:
@@ -44,7 +49,7 @@ def export_json():
     runs = list_runs(limit=100)
     return jsonify({
         "api": "Frankfurter",
-        "exported_at": datetime.now().isoformat(),
+        "exported_at": datetime.now(PARIS_TZ).isoformat(),
         "total_runs": len(runs),
         "runs": runs
     })
