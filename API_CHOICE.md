@@ -1,13 +1,21 @@
 # API Choice
 
-- Étudiant :
-- API choisie :
-- URL base :
-- Documentation officielle / README :
-- Auth : None / API Key / OAuth
+- Étudiant : Matteo Robin
+- API choisie : Frankfurter
+- URL base : https://api.frankfurter.app
+- Documentation officielle / README : https://www.frankfurter.app/docs/
+- Auth : None
 - Endpoints testés :
-  - GET ...
-  - GET ...
+  - GET /latest
+  - GET /latest?from=EUR
+  - GET /latest?from=EUR&to=USD
+  - GET /currencies
+  - GET /2024-01-15
 - Hypothèses de contrat (champs attendus, types, codes) :
-- Limites / rate limiting connu :
-- Risques (instabilité, downtime, CORS, etc.) :
+  - amount (number)
+  - base (string)
+  - date (string YYYY-MM-DD)
+  - rates (object)
+  - Code 200 pour succès, 404 pour devise invalide
+- Limites / rate limiting connu : Aucune limite n'est documentée dans la doc officielle 
+- Risques (instabilité, downtime, CORS, etc.) : API est gratuite et peut donc être indisponible 
