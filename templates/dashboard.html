@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>API Monitor - Frankfurter</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        h1, h2 { color: #333; }
+        .actions { margin-bottom: 20px; }
+        .actions a { margin-right: 10px; padding: 8px 16px; background: #007bff; color: white; text-decoration: none; }
+        .kpi-grid { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .kpi-card { background: white; padding: 15px; border: 1px solid #ddd; min-width: 150px; }
+        .kpi-label { font-size: 12px; color: #666; }
+        .kpi-value { font-size: 24px; font-weight: bold; }
+        .ok { color: green; }
+        .warn { color: orange; }
+        .bad { color: red; }
+        .card { background: white; padding: 20px; border: 1px solid #ddd; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; }
+        .pass { color: green; font-weight: bold; }
+        .fail { color: red; font-weight: bold; }
+        .error { color: orange; font-weight: bold; }
+        .empty-state { text-align: center; padding: 40px; }
+    </style>
+</head>
+<body>
+    <h1>API Monitor - Frankfurter</h1>
+    
+    <div class="actions">
+        <a href="/run">Lancer un test</a>
+        <a href="/export">Export JSON</a>
+        <a href="/health">Health</a>
+    </div>
+
+    {% if latest %}
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">Disponibilité</div>
+            <div class="kpi-value {{ 'ok' if latest.availability_pct >= 90 else ('warn' if latest.availability_pct >= 70 else 'bad') }}">
+                {{ latest.availability_pct }}%
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Tests réussis</div>
+            <div class="kpi-value ok">{{ latest.passed }}/{{ latest.total }}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Latence moyenne</div>
+            <div class="kpi-value">{{ latest.latency_avg|round|int }} ms</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Latence P95</div>
+            <div class="kpi-value">{{ latest.latency_p95|round|int }} ms</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Dernier Run - {{ latest.timestamp[:19] }}</h2>
+        <table>
+            <tr>
+                <th>Test</th>
+                <th>Catégorie</th>
+                <th>Status</th>
+                <th>Latence</th>
+                <th>Détails</th>
+            </tr>
+            {% for test in tests %}
+            <tr>
+                <td>{{ test.name }}</td>
+                <td>{{ test.category }}</td>
+                <td class="{{ test.status|lower }}">{{ test.status }}</td>
+                <td>{{ test.latency_ms }} ms</td>
+                <td>{{ test.details }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% else %}
+    <div class="card empty-state">
+        <h3>Aucun test exécuté</h3>
+        <p>Cliquez sur "Lancer un test" pour démarrer.</p>
+    </div>
+    {% endif %}
+
+    {% if runs and runs|length > 1 %}
+    <div class="card">
+        <h2>Historique des runs</h2>
+        <table>
+            <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th>Résultat</th>
+                <th>Disponibilité</th>
+                <th>Latence avg</th>
+            </tr>
+            {% for run in runs %}
+            <tr>
+                <td>{{ run.id }}</td>
+                <td>{{ run.timestamp[:19] }}</td>
+                <td class="{{ 'pass' if run.failed == 0 else 'fail' }}">{{ run.passed }}/{{ run.total }}</td>
+                <td>{{ run.availability_pct }}%</td>
+                <td>{{ run.latency_avg|round|int }} ms</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+</body>
+</html>
