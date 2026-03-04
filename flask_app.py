@@ -1,16 +1,72 @@
-from flask import Flask, render_template_string, render_template, jsonify, request, redirect, url_for, session
-from flask import render_template
-from flask import json
-from urllib.request import urlopen
-from werkzeug.utils import secure_filename
-import sqlite3
+from flask import Flask, render_template, jsonify, redirect, url_for
+import json
+from datetime import datetime
+
+from tester.runner import run_all_tests
+from storage import save_run, get_latest_run, list_runs, get_stats
 
 app = Flask(__name__)
 
-@app.get("/")
-def consignes():
-     return render_template('consignes.html')
+LAST_RUN_TIME = None
+MIN_INTERVAL_SECONDS = 30
+
+@app.route('/')
+def index():
+    return redirect(url_for('dashboard'))
+
+@app.route('/dashboard')
+def dashboard():
+    latest = get_latest_run()
+    runs = list_runs(limit=10)
+    tests = []
+    if latest and latest.get('tests_json'):
+        tests = json.loads(latest['tests_json'])
+    return render_template('dashboard.html', latest=latest, tests=tests, runs=runs)
+
+@app.route('/run')
+def run_tests():
+    global LAST_RUN_TIME
+    now = datetime.now()
+    if LAST_RUN_TIME:
+        elapsed = (now - LAST_RUN_TIME).total_seconds()
+        if elapsed < MIN_INTERVAL_SECONDS:
+            return jsonify({
+                "error": f"Veuillez attendre {int(MIN_INTERVAL_SECONDS - elapsed)}s",
+                "retry_after": int(MIN_INTERVAL_SECONDS - elapsed)
+            }), 429
+    LAST_RUN_TIME = now
+    report = run_all_tests()
+    save_run(report)
+    return redirect(url_for('dashboard'))
+
+@app.route('/export')
+def export_json():
+    runs = list_runs(limit=100)
+    return jsonify({
+        "api": "Frankfurter",
+        "exported_at": datetime.now().isoformat(),
+        "total_runs": len(runs),
+        "runs": runs
+    })
+
+@app.route('/health')
+def health():
+    latest = get_latest_run()
+    stats = get_stats()
+    status = "healthy"
+    if latest:
+        if latest['availability_pct'] < 50:
+            status = "unhealthy"
+        elif latest['availability_pct'] < 70:
+            status = "degraded"
+    return jsonify({
+        "status": status,
+        "api": "Frankfurter",
+        "last_check": latest['timestamp'] if latest else None,
+        "availability": latest['availability_pct'] if latest else None,
+        "latency_avg_ms": latest['latency_avg'] if latest else None,
+        "total_runs": stats.get('total_runs', 0)
+    })
 
 if __name__ == "__main__":
-    # utile en local uniquement
     app.run(host="0.0.0.0", port=5000, debug=True)
